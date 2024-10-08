@@ -7,9 +7,6 @@
 name: Deploy infrastructure
 
 on:
-  #
-  # Allows deployment to be invoked manually through the GitHub Actions user interface.
-  #
   workflow_dispatch: 
 
 jobs:
@@ -18,28 +15,22 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      
-      # Checks-out your repository under $GITHUB_WORKSPACE.
       - uses: actions/checkout@v3
 
-      #
-      # Installs Kubectl and connects it to the cluster.
-      #
-      # https://github.com/marketplace/actions/kubernetes-cli-kubectl
-      #
-      - uses: tale/kubectl-action@v1
-        with:
-          base64-kube-config: ${{ secrets.KUBE_CONFIG }}
-          kubectl-version: v1.24.2
+      - name: Decode and set up KUBE_CONFIG
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_ZIP }}" | base64 -d > kubeconfig.zip
+          unzip kubeconfig.zip -d ~/.kube
+        shell: bash
 
-      # 
-      # Deploys MongoDB.
-      #
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+          kubeconfig: ~/.kube/config
+
       - name: Deploy MongoDB
         run: kubectl apply -f ./scripts/cd/mongodb.yaml
 
-      # 
-      # Deploys RabbitMQ.
-      #
       - name: Deploy Rabbit
         run: kubectl apply -f ./scripts/cd/rabbit.yaml

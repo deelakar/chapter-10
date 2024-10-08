@@ -31,7 +31,7 @@ jobs:
       VERSION: ${{ github.sha }}
       CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
       REGISTRY_UN: ${{ secrets.REGISTRY_UN }}
-      REGISTRY_PW: ${{ secrets.REGISTRY_PW  }}
+      REGISTRY_PW: ${{ secrets.REGISTRY_PW }}
       NAME: gateway
       DIRECTORY: gateway
 
@@ -53,14 +53,22 @@ jobs:
         run: ./scripts/cd/push-image.sh
 
       #
-      # Installs Kubectl and connects it to the cluster.
+      # Decode and set up the kubeconfig file from the KUBE_CONFIG_ZIP secret.
       #
-      # https://github.com/marketplace/actions/kubernetes-cli-kubectl
+      - name: Decode and set up KUBE_CONFIG
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_ZIP }}" | base64 -d > kubeconfig.zip
+          unzip kubeconfig.zip -d ~/.kube
+        shell: bash
+
       #
-      - uses: tale/kubectl-action@v1
+      # Installs Kubectl and connects it to the cluster using the decoded kubeconfig.
+      #
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v3
         with:
-          base64-kube-config: ${{ secrets.KUBE_CONFIG }}
-          kubectl-version: v1.24.2
+          version: 'latest'
+          kubeconfig: ~/.kube/config
       
       #
       # Expands the configuration template and deploys the microservice.

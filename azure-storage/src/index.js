@@ -17,6 +17,7 @@ if (!process.env.STORAGE_ACCESS_KEY) {
     throw new Error("Please specify the access key to an Azure storage account in environment variable STORAGE_ACCESS_KEY.");
 }
 
+console.log("STORAGE_ACCESS_KEY");
 //
 // Extracts environment variables to globals for convenience.
 //
