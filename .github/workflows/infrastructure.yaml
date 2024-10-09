@@ -1,0 +1,34 @@
+name: Deploy infrastructure
+
+on:
+  workflow_dispatch: 
+
+jobs:
+
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      
+      - uses: actions/checkout@v3
+
+      - name: Reconstruct Kubeconfig
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_PART_1 }}" > kubeconfig_base64
+          echo "${{ secrets.KUBE_CONFIG_PART_2 }}" >> kubeconfig_base64
+          echo "${{ secrets.KUBE_CONFIG_PART_3 }}" >> kubeconfig_base64
+          echo "${{ secrets.KUBE_CONFIG_PART_4 }}" >> kubeconfig_base64
+          cat kubeconfig_base64 | base64 -d > kubeconfig.enc
+
+      - name: Decrypt Kubeconfig
+        run: |
+          openssl enc -aes-256-cbc -d -in kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
+
+      - name: Set Kubeconfig Environment Variable
+        run: export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig
+
+      - name: Deploy MongoDB
+        run: kubectl apply -f ./scripts/cd/mongodb.yaml
+
+      - name: Deploy Rabbit
+        run: kubectl apply -f ./scripts/cd/rabbit.yaml
