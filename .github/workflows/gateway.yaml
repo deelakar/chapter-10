@@ -56,13 +56,19 @@ jobs:
       - name: Publish
         run: ./scripts/cd/push-image.sh
 
-      - name: Reconstruct Kubeconfig
+      - name: Reconstruct and Decode Kubeconfig
         run: |
-          echo "${{ secrets.KUBE_CONFIG_PART_1 }}" > kubeconfig_base64
-          echo "${{ secrets.KUBE_CONFIG_PART_2 }}" >> kubeconfig_base64
-          echo "${{ secrets.KUBE_CONFIG_PART_3 }}" >> kubeconfig_base64
-          echo "${{ secrets.KUBE_CONFIG_PART_4 }}" >> kubeconfig_base64
-          base64 -d > kubeconfig.enc
+          echo -n "${{ secrets.KUBE_CONFIG_PART_1 }}" > kubeconfig_base64
+          echo -n "${{ secrets.KUBE_CONFIG_PART_2 }}" >> kubeconfig_base64
+          echo -n "${{ secrets.KUBE_CONFIG_PART_3 }}" >> kubeconfig_base64
+
+          base64 -d kubeconfig_base64 > kubeconfig.enc
+
+      - name: Verify Decoded File
+        run: |
+          ls -lh kubeconfig.enc
+          file kubeconfig.enc
+          hexdump -C kubeconfig.enc | head
 
       - name: Decrypt Kubeconfig
         run: |
