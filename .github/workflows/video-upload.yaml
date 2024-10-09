@@ -39,4 +39,16 @@ jobs:
           openssl enc -aes-256-cbc -d -in ./secrets/kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
 
       - name: Set Kubeconfig Environment Variable
-        run: echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig
+        run: echo "KUBECONFIG=${GITHUB_WORKSPACE}/kubeconfig" >> $GITHUB_ENV
+
+      - name: Validate Kubeconfig
+        run: kubectl config view --kubeconfig=$GITHUB_WORKSPACE/kubeconfig
+
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+          kubeconfig: ${{ github.workspace }}/kubeconfig
+
+      - name: Deploy
+        run: ./scripts/cd/deploy.sh
