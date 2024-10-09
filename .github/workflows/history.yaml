@@ -18,38 +18,37 @@ jobs:
       VERSION: ${{ github.sha }}
       CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
       REGISTRY_UN: ${{ secrets.REGISTRY_UN }}
-      REGISTRY_PW: ${{ secrets.REGISTRY_PW  }}
+      REGISTRY_PW: ${{ secrets.REGISTRY_PW }}
       NAME: history
       DIRECTORY: history
 
     steps:
-      
       - uses: actions/checkout@v3
-      
+
       - name: Set permissions for scripts
         run: chmod +x ./scripts/cd/*.sh
-      
-      # Build
+
       - name: Build
         run: ./scripts/cd/build-image.sh
 
       - name: Publish
         run: ./scripts/cd/push-image.sh
 
-      - name: Reconstruct Kubeconfig
-        run: |
-          echo "${{ secrets.KUBE_CONFIG_PART_1 }}" > kubeconfig_base64
-          echo "${{ secrets.KUBE_CONFIG_PART_2 }}" >> kubeconfig_base64
-          echo "${{ secrets.KUBE_CONFIG_PART_3 }}" >> kubeconfig_base64
-          echo "${{ secrets.KUBE_CONFIG_PART_4 }}" >> kubeconfig_base64
-          cat kubeconfig_base64 | base64 -d > kubeconfig.enc
-
       - name: Decrypt Kubeconfig
         run: |
-          openssl enc -aes-256-cbc -d -in kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
+          openssl enc -aes-256-cbc -d -in ./secrets/kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
 
       - name: Set Kubeconfig Environment Variable
-        run: export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig
+        run: echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig" >> $GITHUB_ENV
+
+      - name: Validate Kubeconfig
+        run: kubectl config view --kubeconfig=$GITHUB_WORKSPACE/kubeconfig
+
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+          kubeconfig: ${{ github.workspace }}/kubeconfig
 
       - name: Deploy
         run: ./scripts/cd/deploy.sh
