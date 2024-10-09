@@ -1,25 +1,12 @@
-# 
-# GitHub Actions workflow.
-#
-# Automatically deploys the Node.js microservice to Kubernetes on push to the main branch.
-# For real use you might want to restrict this to the "prod" branch.
-#
-
 name: Deploy gateway
 
 on:
-  #
-  # Deploy the microservice on push to any branch of this code repository.
-  #
   push: 
     branches:
       - main
     paths:
       - gateway/**
 
-  #
-  # Allows deployment to be invoked manually through the GitHub Actions user interface.
-  #
   workflow_dispatch: 
 
 jobs:
@@ -36,97 +23,40 @@ jobs:
       DIRECTORY: gateway
 
     steps:
-      
-      # Checks-out your repository under $GITHUB_WORKSPACE.
+      # Checks out your repository under $GITHUB_WORKSPACE.
       - uses: actions/checkout@v3
 
-      #
-      # Builds the Docker image.
-      #
+      # Sets execute permissions for all scripts in the cd directory.
       - name: Set permissions for scripts
         run: chmod +x ./scripts/cd/*.sh
-      
-      # Build
+
+      # Builds the Docker image.
       - name: Build
         run: ./scripts/cd/build-image.sh
 
-      #
       # Publishes the Docker image to the container registry.
-      # cat kubeconfig_base64 | 
       - name: Publish
         run: ./scripts/cd/push-image.sh
 
-#       - name: Reconstruct and Decode Kubeconfig
-#         run: |
-#           echo -n "${{ secrets.KUBE_CONFIG_PART_1 }}" > kubeconfig_base64
-#           echo -n "${{ secrets.KUBE_CONFIG_PART_2 }}" >> kubeconfig_base64
-#           echo -n "${{ secrets.KUBE_CONFIG_PART_3 }}" >> kubeconfig_base64
-
-#           base64 -d kubeconfig_base64 > kubeconfig.enc
-
-#       - name: Verify Decoded File
-#         run: |
-#           ls -lh kubeconfig.enc
-#           file kubeconfig.enc
-#           hexdump -C kubeconfig.enc | head
-
-#       - name: Decrypt Kubeconfig
-#         run: |
-#           openssl enc -aes-256-cbc -d -in kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
+      # Decrypts the Kubeconfig file.
       - name: Decrypt Kubeconfig
         run: |
           openssl enc -aes-256-cbc -d -in ./secrets/kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
 
+      # Sets the Kubeconfig environment variable for kubectl commands.
       - name: Set Kubeconfig Environment Variable
-        run: export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig
+        run: echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig" >> $GITHUB_ENV
 
+      - name: Validate Kubeconfig
+        run: kubectl config view --kubeconfig=$GITHUB_WORKSPACE/kubeconfig
+
+      # Sets up Kubectl using the kubeconfig file.
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+          kubeconfig: ${{ github.workspace }}/kubeconfig
+
+      # Deploys the application using the deploy script.
       - name: Deploy
         run: ./scripts/cd/deploy.sh
-
-# name: Deploy gateway
-
-# on:
-#   push: 
-#     branches:
-#       - main
-#     paths:
-#       - gateway/**
-
-#   workflow_dispatch: 
-
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-    
-#     env:
-#       VERSION: ${{ github.sha }}
-#       CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
-#       REGISTRY_UN: ${{ secrets.REGISTRY_UN }}
-#       REGISTRY_PW: ${{ secrets.REGISTRY_PW }}
-#       NAME: gateway
-#       DIRECTORY: gateway
-
-#     steps:
-#       - uses: actions/checkout@v3
-
-#       - name: Set execute permissions for build script
-#         run: chmod +x ./scripts/cd/build-image.sh
-
-#       - name: Build
-#         run: ./scripts/cd/build-image.sh
-
-#       - name: Publish
-#         run: ./scripts/cd/push-image.sh
-
-#       - name: Decrypt Kubeconfig
-#         run: |
-#           openssl enc -aes-256-cbc -d -in ./secrets/kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
-      
-#       - name: Set up Kubectl
-#         uses: azure/setup-kubectl@v3
-#         with:
-#           version: 'latest'
-#           kubeconfig: $GITHUB_WORKSPACE/kubeconfig
-
-#       - name: Deploy
-#         run: ./scripts/cd/deploy.sh
