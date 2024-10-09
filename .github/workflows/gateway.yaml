@@ -52,26 +52,20 @@ jobs:
       - name: Publish
         run: ./scripts/cd/push-image.sh
 
-      #
-      # Decode and set up the kubeconfig file from the KUBE_CONFIG_ZIP secret.
-      #
-      - name: Decode and set up KUBE_CONFIG
+      - name: Reconstruct Kubeconfig
         run: |
-          echo "${{ secrets.KUBE_CONFIG_ZIP }}" | base64 -d > kubeconfig.zip
-          unzip kubeconfig.zip -d ~/.kube
-        shell: bash
+          echo "${{ secrets.KUBE_CONFIG_PART_1 }}" > kubeconfig_base64
+          echo "${{ secrets.KUBE_CONFIG_PART_2 }}" >> kubeconfig_base64
+          echo "${{ secrets.KUBE_CONFIG_PART_3 }}" >> kubeconfig_base64
+          echo "${{ secrets.KUBE_CONFIG_PART_4 }}" >> kubeconfig_base64
+          cat kubeconfig_base64 | base64 -d > kubeconfig.enc
 
-      #
-      # Installs Kubectl and connects it to the cluster using the decoded kubeconfig.
-      #
-      - name: Set up Kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
-          kubeconfig: ~/.kube/config
-      
-      #
-      # Expands the configuration template and deploys the microservice.
-      #
+      - name: Decrypt Kubeconfig
+        run: |
+          openssl enc -aes-256-cbc -d -in kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
+
+      - name: Set Kubeconfig Environment Variable
+        run: export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig
+
       - name: Deploy
         run: ./scripts/cd/deploy.sh

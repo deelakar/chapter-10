@@ -1,9 +1,3 @@
-# 
-# GitHub Actions workflow.
-#
-# Deploys RabbitMQ and MongoDB database.
-#
-
 name: Deploy infrastructure
 
 on:
@@ -15,19 +9,23 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      
       - uses: actions/checkout@v3
 
-      - name: Decode and set up KUBE_CONFIG
+      - name: Reconstruct Kubeconfig
         run: |
-          echo "${{ secrets.KUBE_CONFIG_ZIP }}" | base64 -d > kubeconfig.zip
-          unzip kubeconfig.zip -d ~/.kube
-        shell: bash
+          echo "${{ secrets.KUBE_CONFIG_PART_1 }}" > kubeconfig_base64
+          echo "${{ secrets.KUBE_CONFIG_PART_2 }}" >> kubeconfig_base64
+          echo "${{ secrets.KUBE_CONFIG_PART_3 }}" >> kubeconfig_base64
+          echo "${{ secrets.KUBE_CONFIG_PART_4 }}" >> kubeconfig_base64
+          cat kubeconfig_base64 | base64 -d > kubeconfig.enc
 
-      - name: Set up Kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
-          kubeconfig: ~/.kube/config
+      - name: Decrypt Kubeconfig
+        run: |
+          openssl enc -aes-256-cbc -d -in kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
+
+      - name: Set Kubeconfig Environment Variable
+        run: export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig
 
       - name: Deploy MongoDB
         run: kubectl apply -f ./scripts/cd/mongodb.yaml
