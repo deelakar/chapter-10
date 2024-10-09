@@ -1,60 +1,60 @@
-# # 
-# # GitHub Actions workflow.
-# #
-# # Automatically deploys the Node.js microservice to Kubernetes on push to the main branch.
-# # For real use you might want to restrict this to the "prod" branch.
-# #
+# 
+# GitHub Actions workflow.
+#
+# Automatically deploys the Node.js microservice to Kubernetes on push to the main branch.
+# For real use you might want to restrict this to the "prod" branch.
+#
 
-# name: Deploy gateway
+name: Deploy gateway
 
-# on:
-#   #
-#   # Deploy the microservice on push to any branch of this code repository.
-#   #
-#   push: 
-#     branches:
-#       - main
-#     paths:
-#       - gateway/**
+on:
+  #
+  # Deploy the microservice on push to any branch of this code repository.
+  #
+  push: 
+    branches:
+      - main
+    paths:
+      - gateway/**
 
-#   #
-#   # Allows deployment to be invoked manually through the GitHub Actions user interface.
-#   #
-#   workflow_dispatch: 
+  #
+  # Allows deployment to be invoked manually through the GitHub Actions user interface.
+  #
+  workflow_dispatch: 
 
-# jobs:
+jobs:
 
-#   deploy:
-#     runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
     
-#     env:
-#       VERSION: ${{ github.sha }}
-#       CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
-#       REGISTRY_UN: ${{ secrets.REGISTRY_UN }}
-#       REGISTRY_PW: ${{ secrets.REGISTRY_PW }}
-#       NAME: gateway
-#       DIRECTORY: gateway
+    env:
+      VERSION: ${{ github.sha }}
+      CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
+      REGISTRY_UN: ${{ secrets.REGISTRY_UN }}
+      REGISTRY_PW: ${{ secrets.REGISTRY_PW }}
+      NAME: gateway
+      DIRECTORY: gateway
 
-#     steps:
+    steps:
       
-#       # Checks-out your repository under $GITHUB_WORKSPACE.
-#       - uses: actions/checkout@v3
+      # Checks-out your repository under $GITHUB_WORKSPACE.
+      - uses: actions/checkout@v3
 
-#       #
-#       # Builds the Docker image.
-#       #
-#       - name: Set permissions for scripts
-#         run: chmod +x ./scripts/cd/*.sh
+      #
+      # Builds the Docker image.
+      #
+      - name: Set permissions for scripts
+        run: chmod +x ./scripts/cd/*.sh
       
-#       # Build
-#       - name: Build
-#         run: ./scripts/cd/build-image.sh
+      # Build
+      - name: Build
+        run: ./scripts/cd/build-image.sh
 
-#       #
-#       # Publishes the Docker image to the container registry.
-#       # cat kubeconfig_base64 | 
-#       - name: Publish
-#         run: ./scripts/cd/push-image.sh
+      #
+      # Publishes the Docker image to the container registry.
+      # cat kubeconfig_base64 | 
+      - name: Publish
+        run: ./scripts/cd/push-image.sh
 
 #       - name: Reconstruct and Decode Kubeconfig
 #         run: |
@@ -73,57 +73,60 @@
 #       - name: Decrypt Kubeconfig
 #         run: |
 #           openssl enc -aes-256-cbc -d -in kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
-
-#       - name: Set Kubeconfig Environment Variable
-#         run: export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig
-
-#       - name: Deploy
-#         run: ./scripts/cd/deploy.sh
-
-name: Deploy gateway
-
-on:
-  push: 
-    branches:
-      - main
-    paths:
-      - gateway/**
-
-  workflow_dispatch: 
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    
-    env:
-      VERSION: ${{ github.sha }}
-      CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
-      REGISTRY_UN: ${{ secrets.REGISTRY_UN }}
-      REGISTRY_PW: ${{ secrets.REGISTRY_PW }}
-      NAME: gateway
-      DIRECTORY: gateway
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set execute permissions for build script
-        run: chmod +x ./scripts/cd/build-image.sh
-
-      - name: Build
-        run: ./scripts/cd/build-image.sh
-
-      - name: Publish
-        run: ./scripts/cd/push-image.sh
-
       - name: Decrypt Kubeconfig
         run: |
           openssl enc -aes-256-cbc -d -in ./secrets/kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
-      
-      - name: Set up Kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
-          kubeconfig: $GITHUB_WORKSPACE/kubeconfig
+
+      - name: Set Kubeconfig Environment Variable
+        run: export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig
 
       - name: Deploy
         run: ./scripts/cd/deploy.sh
+
+# name: Deploy gateway
+
+# on:
+#   push: 
+#     branches:
+#       - main
+#     paths:
+#       - gateway/**
+
+#   workflow_dispatch: 
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+    
+#     env:
+#       VERSION: ${{ github.sha }}
+#       CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
+#       REGISTRY_UN: ${{ secrets.REGISTRY_UN }}
+#       REGISTRY_PW: ${{ secrets.REGISTRY_PW }}
+#       NAME: gateway
+#       DIRECTORY: gateway
+
+#     steps:
+#       - uses: actions/checkout@v3
+
+#       - name: Set execute permissions for build script
+#         run: chmod +x ./scripts/cd/build-image.sh
+
+#       - name: Build
+#         run: ./scripts/cd/build-image.sh
+
+#       - name: Publish
+#         run: ./scripts/cd/push-image.sh
+
+#       - name: Decrypt Kubeconfig
+#         run: |
+#           openssl enc -aes-256-cbc -d -in ./secrets/kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
+      
+#       - name: Set up Kubectl
+#         uses: azure/setup-kubectl@v3
+#         with:
+#           version: 'latest'
+#           kubeconfig: $GITHUB_WORKSPACE/kubeconfig
+
+#       - name: Deploy
+#         run: ./scripts/cd/deploy.sh
