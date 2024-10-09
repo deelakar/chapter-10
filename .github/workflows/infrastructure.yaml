@@ -16,7 +16,7 @@ jobs:
 
       - name: Decrypt Kubeconfig
         run: |
-          openssl enc -aes-256-cbc -d -in ./secrets/kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
+          openssl enc -aes-256-cbc -pbkdf2 -d -in ./secrets/kubeconfig.enc -out kubeconfig -pass pass:${{ secrets.DECRYPTION_KEY }}
 
       - name: Set Kubeconfig Environment Variable
         run: echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig" >> $GITHUB_ENV
