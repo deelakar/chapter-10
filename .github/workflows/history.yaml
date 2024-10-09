@@ -28,7 +28,8 @@ jobs:
       
       - name: Set permissions for scripts
         run: chmod +x ./scripts/cd/*.sh
-
+      
+      # Build
       - name: Build
         run: ./scripts/cd/build-image.sh
 

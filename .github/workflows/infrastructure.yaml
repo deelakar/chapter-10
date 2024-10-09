@@ -27,6 +27,7 @@ jobs:
       - name: Set Kubeconfig Environment Variable
         run: export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig
 
+
       - name: Deploy MongoDB
         run: kubectl apply -f ./scripts/cd/mongodb.yaml
 
