@@ -43,6 +43,9 @@ jobs:
       #
       # Builds the Docker image.
       #
+      - name: Set permissions for scripts
+        run: chmod +x ./scripts/cd/*.sh
+
       - name: Build
         run: ./scripts/cd/build-image.sh
 
