@@ -52,7 +52,7 @@ jobs:
 
       #
       # Publishes the Docker image to the container registry.
-      #
+      # cat kubeconfig_base64 | 
       - name: Publish
         run: ./scripts/cd/push-image.sh
 
@@ -62,7 +62,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_PART_2 }}" >> kubeconfig_base64
           echo "${{ secrets.KUBE_CONFIG_PART_3 }}" >> kubeconfig_base64
           echo "${{ secrets.KUBE_CONFIG_PART_4 }}" >> kubeconfig_base64
-          cat kubeconfig_base64 | base64 -d > kubeconfig.enc
+          base64 -d > kubeconfig.enc
 
       - name: Decrypt Kubeconfig
         run: |
